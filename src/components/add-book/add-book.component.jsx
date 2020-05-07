@@ -1,22 +1,54 @@
 import React from "react";
-import {gql} from 'apollo-boost'
 import {graphql} from "react-apollo";
+import flowright from 'lodash.flowright'
+import {getAuthorsQuery, addBookMutation, getBooksQuery} from '../../queries/queries';
 
-const getAuthorsQuery = gql`
-    {
-        authors{
-            name
-            id
-        }
-    }
-`;
 
 class AddBook extends React.Component {
+
+    constructor(props) {
+        super(props);
+
+        this.state = {
+            name: "",
+            genre: "",
+            authorId: ""
+        }
+    }
+
+    displayAuthors() {
+        let data = this.props.getAuthorsQuery;
+        if (data.loading) {
+            return (
+                <option>Loading Authors...</option>
+            )
+        } else {
+            return (
+                data.authors.map(author => (
+                    <option key={author.id} value={author.id}>{author.name}</option>
+                ))
+            )
+        }
+    }
+
+    submitForm = e => {
+        e.preventDefault();
+
+        this.props.addBookMutation({
+            variables: {
+                name: this.state.name,
+                genre: this.state.genre,
+                authorId: this.state.authorId
+            },
+            refetchQueries: [{query: getBooksQuery}]
+        });
+
+    };
 
     render() {
         return (
             <div>
-                <form id="add-book" onSubmit={this.submitForm.bind(this)}>
+                <form id="add-book" onSubmit={this.submitForm}>
                     <div className="field">
                         <label>Book name:</label>
                         <input type="text" onChange={(e) => this.setState({name: e.target.value})}/>
@@ -28,7 +60,8 @@ class AddBook extends React.Component {
                     <div className="field">
                         <label>Author:</label>
                         <select onChange={(e) => this.setState({authorId: e.target.value})}>
-                            <option>Select author</option>
+                            <option>Select Author</option>
+                            {this.displayAuthors()}
                         </select>
                     </div>
                     <button>+</button>
@@ -38,4 +71,7 @@ class AddBook extends React.Component {
     }
 };
 
-export default graphql(getAuthorsQuery)(AddBook);
+export default flowright(
+    graphql(getAuthorsQuery, {name: "getAuthorsQuery"}),
+    graphql(addBookMutation, {name: "addBookMutation"})
+)(AddBook);
